@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public enum ScaleType
 {
@@ -14,6 +15,8 @@ public enum ScaleType
 
 public class ChordConverter : MonoBehaviour
 {
+
+
     [Header("Input")]
     [SerializeField] TMP_InputField chordsInput;
     [SerializeField] TMP_InputField scaleInput;
@@ -28,7 +31,26 @@ public class ChordConverter : MonoBehaviour
     [SerializeField] Button resetBtn;
     [SerializeField] Button diminishedCopyBtn;
 
+    [Header("TextMeshPro")]
+    [SerializeField] TextMeshProUGUI errorTMP;
+    [SerializeField] TextMeshProUGUI noticeTMP;
+
     private Dictionary<int, string> RomanDic;
+
+    private Sequence errorSequence;
+    private Sequence noticeSequence;
+
+    #region string value
+    private const string chordEmptyError = "'코드 진행' 문자열이 비어있습니다.";
+    private const string scaleEmptyError = "'스케일' 문자열이 비어있습니다.";
+    private const string resultEmptyError = "결과값이 없습니다.";
+    private const string convertError = "문자열을 제대로 입력하세요.";
+
+    private const string convertNotice = "변환되었습니다.";
+    private const string copyNotice = "결과가 복사되었습니다.";
+    private const string resetNotice = "초기화 되었습니다.";
+    private const string diminishedCopyNotice = "디미니쉬드 기호가 복사되었습니다.";
+    #endregion
 
     private void Start()
     {
@@ -46,13 +68,25 @@ public class ChordConverter : MonoBehaviour
 
     private void OnClickConvert()
     {
+        if (string.IsNullOrEmpty(chordsInput.text))
+        {
+            Error(chordEmptyError);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(scaleInput.text))
+        {
+            Error(scaleEmptyError);
+            return;
+        }
+
+        Convert();
+    }
+
+    private void Convert()
+    {
         string[] chords = chordsInput.text.Split(" ");
         string romanChord = string.Empty;
-
-        if (chords == null)
-        {
-            Error();
-        }
 
         char scale = scaleInput.text[0];
 
@@ -60,7 +94,12 @@ public class ChordConverter : MonoBehaviour
         {
             char value = chord[0];
             int difference = Subtract(value, scale);
-            string roman = RomanDic[difference];
+
+            if (!RomanDic.TryGetValue(difference, out string roman))
+            {
+                Error(convertError);
+                return;
+            }
 
             ScaleType type = CheckType(chord);
 
@@ -89,6 +128,8 @@ public class ChordConverter : MonoBehaviour
 
         analysisTMP.text = romanChord;
         firstTMP.text = romanChord.Split(" ")[0];
+
+        Notice(convertNotice);
     }
 
     private int Subtract(char chord, char scale)
@@ -128,7 +169,15 @@ public class ChordConverter : MonoBehaviour
 
     private void OnClickCopy()
     {
+        if (string.IsNullOrEmpty(analysisTMP.text))
+        {
+            Error(resultEmptyError);
+            return;
+        }
+
         GUIUtility.systemCopyBuffer = analysisTMP.text;
+
+        Notice(copyNotice);
     }
 
     private void OnClickReset()
@@ -138,15 +187,46 @@ public class ChordConverter : MonoBehaviour
 
         analysisTMP.text = string.Empty;
         firstTMP.text = string.Empty;
+
+        Notice(resetNotice);
     }
 
     private void OnClickDiminisedCopy()
     {
         GUIUtility.systemCopyBuffer = "°";
+
+        Notice(diminishedCopyNotice);
     }
 
-    private void Error()
+    private void Error(string _errorLog)
     {
+        errorSequence.Kill();
 
+        errorSequence = DOTween.Sequence();
+
+        errorSequence.AppendCallback(() => 
+            { 
+                errorTMP.alpha = 0f;
+                errorTMP.text = _errorLog;
+            })
+            .Append(errorTMP.DOFade(1f, 0.25f))
+            .AppendInterval(1f)
+            .Append(errorTMP.DOFade(0f, 0.25f));
+    }
+
+    private void Notice(string _noticeLog)
+    {
+        noticeSequence.Kill();
+
+        noticeSequence = DOTween.Sequence();
+
+        noticeSequence.AppendCallback(() =>
+            {
+                noticeTMP.alpha = 0f;
+                noticeTMP.text = _noticeLog;
+            })
+            .Append(noticeTMP.DOFade(1f, 0.25f))
+            .AppendInterval(1f)
+            .Append(noticeTMP.DOFade(0f, 0.25f));
     }
 }
