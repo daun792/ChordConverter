@@ -15,8 +15,6 @@ public enum ScaleType
 
 public class ChordConverter : MonoBehaviour
 {
-
-
     [Header("Input")]
     [SerializeField] TMP_InputField chordsInput;
     [SerializeField] TMP_InputField scaleInput;
@@ -136,30 +134,22 @@ public class ChordConverter : MonoBehaviour
     {
         int result = chord - scale + 1;
 
-        if (result < 0)
-        {
-            result += 7;
-        }
-        return result;
+        return result < 0 ? result + 7 : result;
     }
 
     private ScaleType CheckType(string _chord)
     {
-        if (_chord.Contains("m") || _chord.Contains("M"))
+        if (_chord.Contains("M"))
         {
-            for (int i = 0; i < _chord.Length; i++)
-            {
-                if (_chord[i] == 'M')
-                {
-                    return ScaleType.Major;
-                }
-                else if (_chord[i] == 'm')
-                {
-                    return ScaleType.Minor;
-                }
-            }
+            return ScaleType.Major;
         }
-        else if (_chord.Contains("¡Æ"))
+
+        if (_chord.Contains("m"))
+        {
+            return ScaleType.Minor;
+        }
+
+        if (_chord.Contains("¡Æ"))
         {
             return ScaleType.Diminished;
         }
